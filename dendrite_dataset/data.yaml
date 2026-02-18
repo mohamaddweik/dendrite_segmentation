@@ -1,0 +1,4 @@
+names:
+  0: dendrite
+path: .
+train: train.txt
