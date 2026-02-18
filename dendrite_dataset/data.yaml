@@ -1,4 +1,6 @@
-names:
-  0: dendrite
 path: .
-train: train.txt
+train: images/train
+val: images/val
+
+nc: 1
+names: ['dendrite']
