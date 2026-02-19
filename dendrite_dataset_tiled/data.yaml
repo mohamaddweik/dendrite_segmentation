@@ -1,0 +1,6 @@
+path: C:\Users\moham\OneDrive\Desktop\jce\Image_processing\dendrite_segmentation\dendrite_dataset_tiled
+train: images/train
+val: images/val
+nc: 1
+names:
+- dendrite
