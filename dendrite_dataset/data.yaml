@@ -1,6 +1,6 @@
 path: .
-train: images/train
-val: images/val
+train: dendrite_dataset/images/train
+val: dendrite_dataset/images/val
 
 nc: 1
 names: ['dendrite']
