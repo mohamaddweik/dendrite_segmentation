@@ -7,8 +7,21 @@ Install the required dependencies using pip:
 `pip install -r requirements.txt`
 
 ## 1. Classic Computer Vision Approach
-To run the deterministic pipeline (Pre-processing -> Sauvola -> Morphology -> Skeletonization):
-`python SEMDendriteSegmenter.py` 
+This deterministic pipeline processes images using classic techniques (Pre-processing -> Sauvola -> Morphology -> Skeletonization). 
+
+Open `SEMDendriteSegmenter.py` and scroll to the bottom of the file to choose how you want to run it:
+
+**Option A: Single Image Analysis (Debugging Mode)**
+To see the step-by-step transformation of a single image:
+1. Uncomment the lines loading a single image and calling `segmenter.run_stages(img)` and `segmenter.show_stages(...)`.
+2. *Tip:* Inside the `run_stages()` function, most of the intermediate steps are commented out by default to save memory. Just uncomment the specific `stages["name"] = ...` lines you want to visualize.
+3. Run the script: `python classic_cv.py`
+
+**Option B: Batch Folder Analysis**
+To process an entire folder and display a grid of the final results:
+1. Comment out the single image lines at the bottom of the file.
+2. Uncomment the `segmenter.plot_all_overlays(...)` line and make sure the `folder_path` points to your target images.
+3. Run the script: `python classic_cv.py`
 
 ## 2. Deep Learning Approach (YOLO)
 
