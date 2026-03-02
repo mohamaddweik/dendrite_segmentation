@@ -1,0 +1,7 @@
+ultralytics
+torch
+numpy
+opencv-python
+Pillow
+scikit-image
+scipy
