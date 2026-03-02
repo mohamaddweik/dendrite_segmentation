@@ -117,9 +117,9 @@ def overlay_mask(img_bgr: np.ndarray, mask: np.ndarray, alpha=0.35):
 
 def main():
     # ---- EDIT THESE PATHS ----
-    weights = r"C:\Users\moham\OneDrive\Desktop\jce\Image_processing\dendrite_segmentation\runs\segment\yolo26_dendrite_tiled_v1\weights\best.pt"
-    source_folder = r"C:\Users\moham\OneDrive\Desktop\jce\Image_processing\dendrite_segmentation\dendrite_dataset\images\val"
-    out_dir = r"C:\Users\moham\OneDrive\Desktop\jce\Image_processing\dendrite_segmentation\runs\segment\pred_tiled_out_2"
+    weights = r"runs\segment\yolo26_dendrite_tiled_v1\weights\best.pt"
+    source_folder = r"dendrite_dataset_tiled\images\val"
+    out_dir = r"runs\segment\pred_tiled_out_2"
     # --------------------------
 
     os.makedirs(out_dir, exist_ok=True)
