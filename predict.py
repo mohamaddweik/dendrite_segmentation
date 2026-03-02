@@ -1,10 +1,10 @@
 from ultralytics import YOLO
 
 def main():
-    model = YOLO(r"C:\Users\moham\OneDrive\Desktop\jce\Image_processing\dendrite_segmentation\runs\segment\yolo26_dendrite_tiled_v1\weights\best.pt")
+    model = YOLO(r"runs\segment\yolo26_dendrite_tiled_v1\weights\best.pt")
 
     model.predict(
-        source=r"C:\Users\moham\OneDrive\Desktop\jce\Image_processing\dendrite_segmentation\dendrite_dataset\images\val",
+        source=r"dendrite_dataset\images\val",
         imgsz=896,
         device="cpu",
         conf=0.15,
