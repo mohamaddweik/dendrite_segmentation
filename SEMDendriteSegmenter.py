@@ -48,13 +48,6 @@ class SEMDendriteSegmenter:
 
         cut_pixels = height - overlay_start_row
         return max(0, min(cut_pixels, height - 1))
-    
-    def remove_overlay(self, img_gray: np.ndarray) -> np.ndarray:
-        """
-        Remove the bottom overlay from the input grayscale image.
-        """
-        cut = self.estimate_overlay_cut(img_gray, search_bottom_frac=0.35)
-        return img_gray[:-cut, :] if cut > 0 else img_gray
 
     def enhance_contrast_clahe(self, img_gray: np.ndarray,
                            clip_limit: float = 2.0,
@@ -366,8 +359,14 @@ class SEMDendriteSegmenter:
     def run_stages(self, img: np.ndarray):
         stages = {}
 
-        # 1) Remove overlay / metadata area
-        base = self.remove_overlay(img)
+        # 1) Cut the image into two physical pieces
+        cut = self.estimate_overlay_cut(img)
+        if cut > 0:
+            base = img[:-cut, :]
+            bottom_strip = img[-cut:, :] # Save the chopped text/scale bar for later!
+        else:
+            base = img.copy()
+            bottom_strip = None
         #stages["1_overlay_removed"] = base
 
         # 2) Histogram normalization
@@ -386,14 +385,14 @@ class SEMDendriteSegmenter:
         # 5) Dual Sauvola masks
         relaxed = self.threshold_sauvola_mask(den, window_size=21, k=0.08)
         relaxed = self.filter_connected_components(relaxed, min_area=4)
-        stages["5a_relaxed"] = relaxed
+        #stages["5a_relaxed"] = relaxed
 
         strict = self.threshold_sauvola_mask(den, window_size=21, k=0.15)
         strict = self.filter_connected_components(strict, min_area=6)
-        stages["5b_strict"] = strict
+        #stages["5b_strict"] = strict
 
         mask = self.filter_by_strong_overlap(relaxed, strict)
-        stages["5c_supported"] = mask
+        #stages["5c_supported"] = mask
 
         # 6) Morphological reconstruction
         marker = cv2.erode(mask, np.ones((3, 3), np.uint8), iterations=1)
@@ -412,6 +411,7 @@ class SEMDendriteSegmenter:
         clean = self.filter_connected_components(wiped, min_area=12)
         #stages["9_cc_filtered"] = clean
 
+        # 10) Edge lines removed
         clean = self.remove_wide_horizontal_bands_by_row_projection(
             clean,
             min_row_frac=0.6,
@@ -422,20 +422,47 @@ class SEMDendriteSegmenter:
         )
         #stages["11_edge_lines_removed"] = clean
 
-        # 12) Final cleanup
+        # 12) Final cleanup mask (cropped)
         clean = self.filter_connected_components(clean, min_area=16)
-        #stages["12_final_mask"] = clean
+        #stages["12_final_mask_cropped"] = clean
 
-        # 13) Skeleton
+        # 13) Skeleton (cropped)
         skel = self.skeletonize_mask(clean)
         skel = self.filter_skeleton_by_mask_thickness(
             clean, skel, min_dist=1.2, dilate_iters=200
         )
-        #stages["13_skeleton"] = skel
+        #stages["13_skeleton_cropped"] = skel
 
-        # 14) Overlays
-        stages["14_overlay_mask"] = self.overlay_mask(base, clean, color=(0, 0, 255), alpha=0.4)
-        #stages["15_overlay_skeleton"] = self.overlay_skeleton(base, skel, color=(0, 255, 0))
+        # 14) Overlays (cropped)
+        colored_base = self.overlay_mask(base, clean, color=(0, 0, 255), alpha=0.4)
+        #stages["14_overlay_cropped"] = colored_base
+        
+        #colored_base_skel = self.overlay_skeleton(base, skel, color=(0, 255, 0))
+        #stages["15_skeleton_overlay_cropped"] = colored_base_skel
+
+        # --- 16) GLUE EVERYTHING BACK TOGETHER ---
+        if bottom_strip is not None:
+            # Convert the saved bottom strip to BGR so the colors match
+            bottom_bgr = cv2.cvtColor(bottom_strip, cv2.COLOR_GRAY2BGR)
+            
+            # Glue them vertically!
+            final_visual = np.vstack((colored_base, bottom_bgr))
+            #final_visual_skel = np.vstack((colored_base_skel, bottom_bgr))
+            
+            # And for the evaluation script, pad the math mask with black
+            clean_full = cv2.copyMakeBorder(clean, 0, cut, 0, 0, cv2.BORDER_CONSTANT, value=0)
+            skel_full = cv2.copyMakeBorder(skel, 0, cut, 0, 0, cv2.BORDER_CONSTANT, value=0)
+        else:
+            final_visual = colored_base
+            #final_visual_skel = colored_base_skel
+            clean_full = clean
+            skel_full = skel
+
+        # Save the FINAL full-size images 
+        stages["12_final_mask"] = clean_full
+        #stages["13_skeleton"] = skel_full
+        stages["14_overlay_mask"] = final_visual
+        #stages["15_overlay_skeleton"] = final_visual_skel
 
         return stages
 
@@ -533,10 +560,46 @@ class SEMDendriteSegmenter:
             plt.tight_layout()
             plt.show()
 
+    def save_all_results(self, input_folder="dendrite_dataset/images/val", output_folder="runs/cv_out"):
+        """
+        Runs the CV pipeline on a folder of images and saves the masks and overlays.
+        """
+        # Create the output folders if they don't exist
+        os.makedirs(os.path.join(output_folder, "masks"), exist_ok=True)
+        os.makedirs(os.path.join(output_folder, "overlays"), exist_ok=True)
+        
+        folder = Path(input_folder)
+        image_paths = [p for p in folder.iterdir() if p.suffix.lower() in ['.png', '.jpg', '.jpeg', '.tif']]
+        
+        print(f"Processing and saving {len(image_paths)} images...")
+        
+        for path in image_paths:
+            # 1. Load and process
+            img = self.load_image(str(path))
+            stages = self.run_stages(img)
+            
+            # 2. Grab the final mask and overlay
+            # Make sure these keys match what you have in run_stages!
+            mask = stages["12_final_mask"] 
+            overlay = stages["14_overlay_mask"]
+            
+            # 3. Save them with the same name format YOLO uses
+            mask_path = os.path.join(output_folder, "masks", f"{path.stem}_mask.png")
+            cv2.imwrite(mask_path, mask)
+            
+            overlay_path = os.path.join(output_folder, "overlays", f"{path.stem}_overlay.png")
+            cv2.imwrite(overlay_path, overlay)
+            
+        print(f"Done! Masks and overlays saved to {output_folder}")
+
 segmenter = SEMDendriteSegmenter()
 
 #img = segmenter.load_image("dendrite_dataset/images/train/70nm_R_50nm_pitch_ETD_012.png")
 
 #stages = segmenter.run_stages(img)
 #segmenter.show_stages(stages, save=False, filename="debug_stages.png")
-segmenter.plot_all_overlays(segmenter, folder_path="dendrite_dataset/images/train/")  
+segmenter.save_all_results(
+    input_folder=r"dendrite_dataset\images\val", 
+    output_folder=r"runs\segment\cv_out"
+)
+#segmenter.plot_all_overlays(segmenter, folder_path="dendrite_dataset/images/val/")  
