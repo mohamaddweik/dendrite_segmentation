@@ -1,4 +1,6 @@
 # SEM Dendrite Segmentation
+Author: Mohamad Dweik, 
+Date: 25/02/2026
 
 This project implements two different approaches for the semantic segmentation of dendrites in Scanning Electron Microscope (SEM) images: a Classic Computer Vision pipeline and a Deep Learning approach using YOLO.
 
@@ -21,7 +23,7 @@ To see the step-by-step transformation of a single image:
 To process an entire folder and display a grid of the final results:
 1. Comment out the single image lines at the bottom of the file.
 2. Uncomment the `segmenter.plot_all_overlays(...)` line and make sure the `folder_path` points to your target images.
-3. Run the script: `python classic_cv.py`
+3. Run the script: `python SEMDendriteSegmenter.py`
 
 ## 2. Deep Learning Approach (YOLO)
 
@@ -50,4 +52,4 @@ If your images are smaller and don't require tiling, use the standard prediction
 
 ### Command Line Inference (Single Image)
 If you prefer using the Ultralytics CLI directly on a single image:
-`yolo segment predict model="runs/segment/yolo26_dendrite_tiled_v1/weights/best.pt" source="path/to/new_image.png" imgsz=896 conf=0.15 iou=0.80 device=cpu save=True`
+`yolo segment predict model="runs/segment/yolo26_dendrite_tiled_final/weights/best.pt" source="path/to/new_image.png" imgsz=896 conf=0.15 iou=0.80 device=cpu save=True`
