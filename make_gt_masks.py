@@ -59,8 +59,8 @@ def convert_yolo_to_masks(images_folder, labels_folder, output_folder):
 
 if __name__ == "__main__":
     # --- UPDATE THESE PATHS IF NEEDED ---
-    IMAGES_DIR = r"dendrite_dataset\images\val"
-    LABELS_DIR = r"dendrite_dataset\labels\val"
-    OUTPUT_DIR = r"dendrite_dataset\labels_masks\val"
+    IMAGES_DIR = r"dendrite_dataset\images\test"
+    LABELS_DIR = r"dendrite_dataset\labels\test"
+    OUTPUT_DIR = r"dendrite_dataset\labels_masks\test"
     
     convert_yolo_to_masks(IMAGES_DIR, LABELS_DIR, OUTPUT_DIR)

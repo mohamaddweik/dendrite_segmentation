@@ -6,7 +6,6 @@ import cv2
 from PIL import Image
 from ultralytics import YOLO
 
-
 def list_images(folder: str):
     exts = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
     return [p for p in Path(folder).iterdir() if p.suffix.lower() in exts]
@@ -22,7 +21,6 @@ def mask_from_xy(r, H, W):
         pts = poly.astype(np.int32)
         cv2.fillPoly(mask, [pts], 1)
     return mask
-
 
 def tile_coords(W, H, tile=768, overlap=0.2):
     # stride is tile minus overlap
@@ -45,7 +43,6 @@ def tile_coords(W, H, tile=768, overlap=0.2):
             y2 = min(H, y + tile)
             coords.append((x, y, x2, y2))
     return coords
-
 
 def run_tiled_segmentation(
     model: YOLO,
@@ -106,7 +103,6 @@ def run_tiled_segmentation(
 
     return full_mask
 
-
 def overlay_mask(img_bgr: np.ndarray, mask: np.ndarray, alpha=0.35):
     # Create a colored overlay (cyan)
     overlay = img_bgr.copy()
@@ -114,12 +110,11 @@ def overlay_mask(img_bgr: np.ndarray, mask: np.ndarray, alpha=0.35):
     overlay[mask == 1] = (overlay[mask == 1] * (1 - alpha) + color * alpha).astype(np.uint8)
     return overlay
 
-
 def main():
     # ---- EDIT THESE PATHS ----
-    weights = r"runs\segment\yolo26_dendrite_tiled_v1\weights\best.pt"
-    source_folder = r"dendrite_dataset\images\val"
-    out_dir = r"runs\segment\pred_tiled_out_2"
+    weights = r"runs\segment\yolo26_dendrite_tiled_final\weights\best.pt"
+    source_folder = r"dendrite_dataset\images\test"
+    out_dir = r"runs\segment\pred_tiled_out_final"
     # --------------------------
 
     os.makedirs(out_dir, exist_ok=True)
@@ -153,7 +148,7 @@ def main():
                 tile=768,
                 overlap=0.20,
                 imgsz=896,
-                conf=0.15,
+                conf=0.05,
                 iou=0.80,
                 device="cpu",
                 max_det=120,
@@ -162,7 +157,7 @@ def main():
           results = model.predict(
               source=img,
               imgsz=768,
-              conf=0.15,
+              conf=0.05,
               iou=0.80,
               device="cpu",
               max_det=120,
@@ -174,7 +169,7 @@ def main():
           mask = np.zeros((H, W), dtype=np.uint8)
           if r.masks is not None:
               m = r.masks.data.detach().float().cpu().numpy()  # (n,h,w)
-              m = (m > 0.7).astype(np.uint8)
+              m = (m > 0.5).astype(np.uint8)
               mask = np.clip(m.sum(axis=0), 0, 1).astype(np.uint8)
 
               if mask.shape[:2] != (H, W):
@@ -193,7 +188,6 @@ def main():
         print("Saved:", overlay_path)
 
     print("\nDone. Outputs in:", out_dir)
-
 
 if __name__ == "__main__":
     main()

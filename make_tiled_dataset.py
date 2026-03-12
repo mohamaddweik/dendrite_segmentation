@@ -280,7 +280,7 @@ def make_tiled_dataset(
     cfg = yaml.safe_load(data_yaml.read_text())
 
     # output dirs
-    for split in ["train", "val"]:
+    for split in ["train", "val", "test"]:
         process_split(
             src_images_dir=src_root / "images" / split,
             src_labels_dir=src_root / "labels" / split,
@@ -298,6 +298,7 @@ def make_tiled_dataset(
     new_cfg["path"] = str(out_root.resolve())
     new_cfg["train"] = "images/train"
     new_cfg["val"] = "images/val"
+    new_cfg["test"] = "images/test"
 
     (out_root / "data.yaml").write_text(yaml.safe_dump(new_cfg, sort_keys=False))
     print("Tiled dataset created at:", out_root)

@@ -51,8 +51,8 @@ def calculate_metrics(gt_folder, pred_folder):
     return iou * 100, precision * 100, recall * 100
 
 if __name__ == "__main__":
-    GT_DIR = r"dendrite_dataset\labels_masks\val"
-    YOLO_PRED_DIR = r"runs\segment\pred_tiled_out_2\masks"
+    GT_DIR = r"dendrite_dataset\labels_masks\test"
+    YOLO_PRED_DIR = r"runs\segment\pred_tiled_out_final\masks"
     CV_PRED_DIR = r"runs\segment\cv_out\masks" 
     
     print("--- YOLO Model Results ---")
